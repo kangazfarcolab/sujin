@@ -1,15 +1,13 @@
 """
-Flask application for the Sujin Agent Framework.
+Flask application for the Sujin Agent Framework Web UI.
 """
 
 import os
 import logging
+import requests
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-
-# Import from Sujin
-from src.sujin.clients.custom_api import CustomAPIClient
 
 # Configure logging
 logging.basicConfig(
@@ -22,28 +20,16 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Create Flask app
-app = Flask(__name__, 
+app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 CORS(app)
 
 # Get environment variables
-API_URL = os.environ.get("CUSTOM_API_URL")
-API_KEY = os.environ.get("CUSTOM_API_KEY")
-MODEL = os.environ.get("CUSTOM_API_MODEL")
+AGENT_SERVICE_URL = os.environ.get("AGENT_SERVICE_URL", "http://localhost:5000")
 AGENT_NAME = os.environ.get("AGENT_NAME", "Sujin")
 
-# Create API client
-api_client = None
-if API_URL and API_KEY and MODEL:
-    api_client = CustomAPIClient(
-        base_url=API_URL,
-        api_key=API_KEY,
-        default_model=MODEL
-    )
-    logger.info(f"Created API client for {API_URL} with model {MODEL}")
-else:
-    logger.warning("API client not created. Missing environment variables.")
+logger.info(f"Web UI configured to connect to agent service at {AGENT_SERVICE_URL}")
 
 @app.route('/')
 def index():
@@ -52,120 +38,79 @@ def index():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Handle chat requests."""
-    if not api_client:
-        return jsonify({
-            "error": "API client not configured. Please set up environment variables."
-        }), 500
-    
-    # Get request data
-    data = request.json
-    message = data.get('message', '')
-    conversation_history = data.get('history', [])
-    
-    # Prepare messages for the API
-    messages = []
-    
-    # Add system message if not present
-    if not any(msg.get('role') == 'system' for msg in conversation_history):
-        messages.append({
-            "role": "system",
-            "content": f"You are {AGENT_NAME}, a helpful AI assistant."
-        })
-    
-    # Add conversation history
-    messages.extend(conversation_history)
-    
-    # Add the new message
-    messages.append({
-        "role": "user",
-        "content": message
-    })
-    
+    """Proxy chat requests to the agent service."""
     try:
-        # Call the API
-        logger.info(f"Calling API with message: {message}")
-        response = api_client.chat_completion(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1500
+        # Forward the request to the agent service
+        service_url = f"{AGENT_SERVICE_URL}/api/chat"
+        logger.info(f"Forwarding chat request to agent service at {service_url}")
+
+        # Send the request
+        response = requests.post(
+            service_url,
+            json=request.json,
+            timeout=60
         )
-        
-        # Extract the response
-        if response and "choices" in response and len(response["choices"]) > 0:
-            choice = response["choices"][0]
-            if "message" in choice and "content" in choice["message"]:
-                content = choice["message"]["content"]
-                
-                # Create response object
-                response_obj = {
-                    "message": content,
-                    "role": "assistant"
-                }
-                
-                # Add usage information if available
-                if "usage" in response:
-                    response_obj["usage"] = response["usage"]
-                
-                return jsonify(response_obj)
-        
+
+        # Return the response from the agent service
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        logger.error(f"Error connecting to agent service: {e}")
         return jsonify({
-            "error": "Failed to get response from API",
-            "raw_response": response
-        }), 500
-    except Exception as e:
-        logger.error(f"Error calling API: {e}")
-        return jsonify({
-            "error": f"Error calling API: {str(e)}"
+            "error": f"Error connecting to agent service: {str(e)}"
         }), 500
 
 @app.route('/api/status')
 def status():
-    """Check the status of the API."""
-    if not api_client:
-        return jsonify({
-            "status": "error",
-            "message": "API client not configured. Please set up environment variables."
-        })
-    
+    """Proxy status request to the agent service."""
     try:
-        # Make a simple request to check if the API is accessible
-        response = api_client.chat_completion(
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Hello"}
-            ],
-            max_tokens=10
-        )
-        
-        if response and "choices" in response:
-            return jsonify({
-                "status": "ok",
-                "message": "API is accessible",
-                "model": MODEL
-            })
-        else:
-            return jsonify({
-                "status": "error",
-                "message": "API returned an invalid response",
-                "raw_response": response
-            })
-    except Exception as e:
-        logger.error(f"Error checking API status: {e}")
+        # Forward the request to the agent service
+        service_url = f"{AGENT_SERVICE_URL}/api/status"
+        logger.info(f"Checking agent service status at {service_url}")
+
+        # Send the request
+        response = requests.get(service_url, timeout=10)
+
+        # Return the response from the agent service
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        logger.error(f"Error connecting to agent service: {e}")
         return jsonify({
             "status": "error",
-            "message": f"Error checking API status: {str(e)}"
+            "message": f"Error connecting to agent service: {str(e)}"
         })
 
 @app.route('/api/config')
 def config():
-    """Get the configuration."""
-    return jsonify({
-        "agent_name": AGENT_NAME,
-        "api_url": API_URL,
-        "model": MODEL,
-        "api_configured": api_client is not None
-    })
+    """Get the configuration from the agent service and combine with local config."""
+    try:
+        # Forward the request to the agent service
+        service_url = f"{AGENT_SERVICE_URL}/api/config"
+        logger.info(f"Getting config from agent service at {service_url}")
+
+        # Send the request
+        response = requests.get(service_url, timeout=10)
+        service_config = response.json()
+
+        # Combine with local config
+        config_data = {
+            "agent_name": AGENT_NAME,
+            "agent_service_url": AGENT_SERVICE_URL,
+            "web_ui_version": "0.1.0"
+        }
+
+        # Add service config if available
+        if response.status_code == 200:
+            config_data.update(service_config)
+
+        return jsonify(config_data)
+    except requests.RequestException as e:
+        logger.error(f"Error connecting to agent service: {e}")
+        return jsonify({
+            "agent_name": AGENT_NAME,
+            "agent_service_url": AGENT_SERVICE_URL,
+            "web_ui_version": "0.1.0",
+            "service_error": str(e)
+        })
 
 def create_app():
     """Create and configure the Flask app."""

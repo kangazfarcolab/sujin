@@ -110,20 +110,50 @@ python sujin.py
 
 ### Using the Web UI
 
-Sujin also provides a web-based chat interface:
+Sujin provides a web-based chat interface that connects to the agent service:
+
+#### Step 1: Start the Agent Service
 
 ```bash
-# Start the web UI
-python sujin_web.py
+# Start the agent service
+python sujin_service.py
 
 # Specify a different port
+python sujin_service.py --port 5001
+
+# Run in debug mode
+python sujin_service.py --debug
+```
+
+#### Step 2: Start the Web UI
+
+```bash
+# Start the web UI (default connects to service at http://localhost:5000)
+python sujin_web.py
+
+# Connect to a specific agent service URL
+python sujin_web.py --service-url http://localhost:5001
+
+# Specify a different port for the web UI
 python sujin_web.py --port 8080
 
 # Run in debug mode
 python sujin_web.py --debug
 ```
 
-Once started, you can access the web UI at http://localhost:5000 (or the port you specified).
+Once started, you can access the web UI at http://localhost:8000 (or the port you specified).
+
+#### Architecture
+
+The web UI and agent service are separate components:
+
+- **Agent Service**: Handles the AI logic and API communication
+- **Web UI**: Provides a user-friendly interface to interact with the agent
+
+This separation allows you to:
+- Run the agent service on a different machine than the web UI
+- Have multiple web UIs connect to the same agent service
+- Update the web UI without restarting the agent service
 
 ### Using the API Client
 
