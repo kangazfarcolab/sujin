@@ -3,3 +3,4 @@ typing-extensions>=4.0.0
 requests>=2.25.0
 python-dotenv>=1.0.0
 rich>=10.0.0
+setuptools>=42.0.0
