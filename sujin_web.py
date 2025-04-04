@@ -29,40 +29,12 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    # Set agent service URL
+    # Set initial agent service URL for configuration
     if args.service_url:
         os.environ["AGENT_SERVICE_URL"] = args.service_url
     elif not os.environ.get("AGENT_SERVICE_URL"):
         # Default to localhost:5000 if not specified
         os.environ["AGENT_SERVICE_URL"] = "http://localhost:5000"
-
-    service_url = os.environ.get("AGENT_SERVICE_URL")
-    logger.info(f"Using agent service at {service_url}")
-
-    # Check if agent service is running
-    try:
-        response = requests.get(f"{service_url}/api/status", timeout=5)
-        if response.status_code == 200:
-            status_data = response.json()
-            if status_data.get("status") == "ok":
-                logger.info(f"Agent service is running at {service_url}")
-                print(f"Agent service is running at {service_url}")
-            else:
-                logger.warning(f"Agent service returned status: {status_data.get('message')}")
-                print(f"Warning: Agent service returned status: {status_data.get('message')}")
-        else:
-            logger.warning(f"Agent service returned status code: {response.status_code}")
-            print(f"Warning: Agent service returned status code: {response.status_code}")
-    except requests.RequestException as e:
-        logger.warning(f"Could not connect to agent service at {service_url}: {e}")
-        print(f"Warning: Could not connect to agent service at {service_url}")
-        print("The web UI will still start, but you'll need to start the agent service separately.")
-        print(f"Run 'python sujin_service.py' to start the agent service.")
-
-    # Always start the agent service automatically
-    import subprocess
-    import atexit
-    import time
 
     # Get the path to the agent service script
     agent_service_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sujin_service.py")
@@ -70,6 +42,10 @@ def main():
 
     # Start the agent service
     print(f"Starting agent service on port {agent_service_port}...")
+    import subprocess
+    import atexit
+    import time
+
     agent_service_process = subprocess.Popen(
         [sys.executable, agent_service_script, "--port", str(agent_service_port)],
         stdout=subprocess.PIPE,
@@ -91,19 +67,19 @@ def main():
 
     atexit.register(stop_agent_service)
 
-    # Wait for agent service to start
+    # Set the final agent service URL
     agent_service_url = f"http://localhost:{agent_service_port}"
     os.environ["AGENT_SERVICE_URL"] = agent_service_url
     print(f"Waiting for agent service to start at {agent_service_url}...")
 
-    # Wait up to 10 seconds for the service to start
-    import requests
+    # Wait for the agent service to start
     max_retries = 10
     for i in range(max_retries):
         try:
             response = requests.get(f"{agent_service_url}/api/status", timeout=2)
             if response.status_code == 200:
                 print(f"Agent service started successfully")
+                logger.info(f"Agent service is running at {agent_service_url}")
                 break
         except requests.RequestException:
             # Service not ready yet
@@ -118,6 +94,8 @@ def main():
         # Wait before retrying
         time.sleep(1)
         print(f"Waiting for agent service... ({i+1}/{max_retries})")
+
+    # Agent service is now started automatically at the beginning
 
     # Initialize workflow engine
     from workflow.engine import WorkflowEngine
