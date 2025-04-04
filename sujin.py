@@ -403,8 +403,31 @@ def run_cli():
             if reasoning_match:
                 reasoning = reasoning_match.group(1).strip()
 
-            # Remove any <reasoning> tags and their content
-            cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
+            # Instead of removing reasoning, let's use it to enhance the response
+            # First, extract the reasoning content
+            reasoning_content = ""
+            if reasoning:
+                # Extract key steps from the reasoning
+                calculation_steps = []
+                for line in reasoning.split("\n"):
+                    # Look for lines that contain calculations or key steps
+                    if any(op in line for op in ["+", "-", "*", "/", "="]) and not line.startswith("#"):
+                        calculation_steps.append(line.strip())
+
+                # If we found calculation steps, add them to the response
+                if calculation_steps:
+                    reasoning_content = "Calculation steps:\n" + "\n".join(calculation_steps)
+
+            # For mathematical expressions, if the cleaned text is too short, use the reasoning
+            is_math_expression = any(op in user_input for op in ["+", "-", "*", "/", "^", "(", ")"])
+
+            # Remove reasoning tags but keep the content if needed
+            if is_math_expression and reasoning:
+                # Replace the reasoning tags with empty strings but keep the content
+                cleaned_text = re.sub(r'<reasoning>|</reasoning>', '', response_text, flags=re.DOTALL)
+            else:
+                # For non-math expressions, remove reasoning completely
+                cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
 
             # Remove any <sep> tags and everything after them
             cleaned_text = re.sub(r'<sep>.*$', '', cleaned_text, flags=re.DOTALL)
@@ -483,7 +506,7 @@ def run_cli():
                     cleaned_text = "I couldn't extract a clear answer from the AI's response."
 
             # Add a clear answer section for math expressions if not already present
-            if is_math_expression and not any(keyword in cleaned_text.lower() for keyword in ["answer", "result", "equals", "==", "=", "final"]):
+            if is_math_expression:
                 try:
                     # Safely evaluate the expression
                     import math
@@ -502,7 +525,15 @@ def run_cli():
                     # Replace ^ with ** for exponentiation
                     expression = user_input.replace("^", "**")
                     result = eval(expression, {"__builtins__": {}}, safe_dict)
-                    cleaned_text += f"\n\nFinal Answer: {result}"
+
+                    # Check if the final answer is already in the text
+                    if not any(f"{result}" in line for line in cleaned_text.split("\n")):
+                        # Add the calculation steps if available
+                        if reasoning_content and reasoning_content not in cleaned_text:
+                            cleaned_text += f"\n\n{reasoning_content}"
+
+                        # Add a clear final answer
+                        cleaned_text += f"\n\nFinal Answer: {result}"
                 except:
                     # If evaluation fails, don't add anything
                     pass
