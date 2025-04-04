@@ -319,7 +319,7 @@ def run_cli():
                 print("  help - Show this help message")
                 print("  env - Show current environment")
                 print("  clear - Clear the screen")
-                print("  calc [expression] - Calculate a mathematical expression")
+                # Removed calc command as we're letting the AI handle all expressions
                 continue
             elif user_input.lower() == "env":
                 print("\nCurrent environment:")
@@ -396,36 +396,38 @@ def run_cli():
             cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
             # Remove any <sep> tags and everything after them
             cleaned_text = re.sub(r'<sep>.*$', '', cleaned_text, flags=re.DOTALL)
-            # Remove LaTeX formatting (backslashes and parentheses)
-            cleaned_text = re.sub(r'\\\(|\\\)', '', cleaned_text)
-            cleaned_text = re.sub(r'\\boxed\{([^}]*)\}', r'\1', cleaned_text)
-            cleaned_text = re.sub(r'\\([a-zA-Z]+)', r'\1', cleaned_text)
-            # Remove extra whitespace
-            cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
-            cleaned_text = re.sub(r'\s+\.', '.', cleaned_text)
-            cleaned_text = re.sub(r'\s+\,', ',', cleaned_text)
+
+            # Improve formatting for mathematical expressions
+            # Replace LaTeX formatting with more readable symbols
+            cleaned_text = re.sub(r'\\\(', '', cleaned_text)  # Remove \(
+            cleaned_text = re.sub(r'\\\)', '', cleaned_text)  # Remove \)
+            cleaned_text = re.sub(r'\\times', '×', cleaned_text)  # Replace \times with ×
+            cleaned_text = re.sub(r'\\div', '÷', cleaned_text)  # Replace \div with ÷
+            cleaned_text = re.sub(r'\\cdot', '·', cleaned_text)  # Replace \cdot with ·
+            cleaned_text = re.sub(r'\\sqrt', '√', cleaned_text)  # Replace \sqrt with √
+            cleaned_text = re.sub(r'\\pi', 'π', cleaned_text)  # Replace \pi with π
+            cleaned_text = re.sub(r'\\boxed\{([^}]*)\}', r'\1', cleaned_text)  # Remove \boxed{}
+
+            # Fix spacing around operators for better readability
+            cleaned_text = re.sub(r'(\d)\s*([+\-×÷·])\s*(\d)', r'\1 \2 \3', cleaned_text)
+
+            # Keep paragraph structure
+            cleaned_text = cleaned_text.strip()
 
             # Format the response
             print("\nResponse:")
             print("-" * 80)
 
-            # Format mathematical expressions better
-            if any(op in user_input for op in ["+", "-", "*", "/", "^", "(", ")"]):
-                try:
-                    # Try to evaluate the expression directly
-                    result = eval(user_input.replace("^", "**"))
-                    print(f"Expression: {user_input}")
-                    print(f"Result: {result}")
-                except:
-                    # If direct evaluation fails, just print the cleaned response
-                    lines = cleaned_text.strip().split("\n")
-                    for line in lines:
-                        print(line.strip())
-            else:
-                # For non-mathematical responses, format with paragraphs
-                paragraphs = cleaned_text.strip().split("\n\n")
-                for paragraph in paragraphs:
-                    print(paragraph.strip())
+            # Preserve the structure of the response
+            # Split by double newlines to get paragraphs
+            paragraphs = cleaned_text.split("\n\n")
+            for paragraph in paragraphs:
+                # Split by single newlines to get lines within paragraphs
+                lines = paragraph.split("\n")
+                for line in lines:
+                    print(line.strip())
+                # Add a blank line between paragraphs
+                if len(paragraphs) > 1:
                     print()
 
             print("-" * 80)
