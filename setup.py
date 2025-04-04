@@ -10,7 +10,8 @@ setup(
     package_dir={"": "src"},
     python_requires=">=3.8",
     install_requires=[
-        # Add dependencies here
+        "pydantic>=2.0.0",
+        "typing-extensions>=4.0.0"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
