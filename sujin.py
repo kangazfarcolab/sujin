@@ -12,6 +12,16 @@ import json
 from dotenv import load_dotenv, set_key
 from typing import Dict, List, Any, Optional
 
+# Rich library for better CLI formatting
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
+from rich.syntax import Syntax
+from rich.prompt import Prompt
+from rich.theme import Theme
+from rich.table import Table
+from rich import box
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -281,13 +291,30 @@ def setup_environment():
 
 def run_cli():
     """Run the Sujin CLI."""
+    # Create a custom theme for Rich
+    custom_theme = Theme({
+        "info": "cyan",
+        "warning": "yellow",
+        "error": "bold red",
+        "success": "green",
+        "agent": "bold blue",
+        "user": "bold white",
+        "system": "italic yellow",
+        "metadata": "dim cyan",
+        "highlight": "magenta",
+    })
+
+    # Create a console with the custom theme
+    console = Console(theme=custom_theme)
+
     # Load environment variables
     load_dotenv()
 
     # Check required environment variables
     required_vars = ["CUSTOM_API_URL", "CUSTOM_API_KEY", "CUSTOM_API_MODEL"]
     if not check_required_env_vars(required_vars):
-        print("\nRun 'python sujin.py env' to set up your environment.")
+        console.print("\n[error]Missing required environment variables.[/error]")
+        console.print("Run 'python sujin.py env' to set up your environment.")
         return 1
 
     # Get environment variables
@@ -296,46 +323,87 @@ def run_cli():
     model = os.environ.get("CUSTOM_API_MODEL")
     agent_name = os.environ.get("AGENT_NAME", "Sujin")
 
-    # Print welcome message
-    print("\n" + "="*50)
-    print(f"{agent_name} CLI")
-    print("="*50)
-    print(f"API URL: {api_url}")
-    print(f"Model: {model}")
-    print("\nType 'exit' to quit.")
-    print("Type 'help' for available commands.")
-    print("-"*50)
+    # Clear the screen
+    console.clear()
 
-    # Simple REPL
+    # Display a welcome banner
+    banner = """
+    ╭───────────────────────────────────────────────╮
+    │                                               │
+    │   ███████╗██╗   ██╗     ██╗██╗███╗   ██╗     │
+    │   ██╔════╝██║   ██║     ██║██║████╗  ██║     │
+    │   ███████╗██║   ██║     ██║██║██╔██╗ ██║     │
+    │   ╚════██║██║   ██║██   ██║██║██║╚██╗██║     │
+    │   ███████║╚██████╔╝╚█████╔╝██║██║ ╚████║     │
+    │   ╚══════╝ ╚═════╝  ╚════╝ ╚═╝╚═╝  ╚═══╝     │
+    │                                               │
+    │           Agent Framework CLI                 │
+    │                                               │
+    ╰───────────────────────────────────────────────╯
+    """
+    console.print(Panel(banner, border_style="agent"))
+
+    # Create a table with agent information
+    table = Table(box=box.ROUNDED, show_header=False, border_style="info")
+    table.add_column("Property", style="bold")
+    table.add_column("Value")
+
+    table.add_row("Agent Name", f"[agent]{agent_name}[/agent]")
+    table.add_row("API Endpoint", f"[info]{api_url}[/info]")
+    table.add_row("Model", f"[highlight]{model}[/highlight]")
+
+    console.print(table)
+    console.print("\n[system]Type 'exit' to quit. Type 'help' for available commands.[/system]\n")
+
+    # Enhanced REPL
     while True:
         try:
-            user_input = input("\n> ")
+            # Use Rich's Prompt for better input
+            user_input = Prompt.ask("\n[bold white]>[/bold white]", console=console)
 
             # Handle special commands
             if user_input.lower() == "exit":
+                console.print("\n[system]Exiting...[/system]")
                 break
             elif user_input.lower() == "help":
-                print("\nAvailable commands:")
-                print("  exit - Exit the CLI")
-                print("  help - Show this help message")
-                print("  env - Show current environment")
-                print("  clear - Clear the screen")
-                # Removed calc command as we're letting the AI handle all expressions
+                help_table = Table(title="Available Commands", box=box.ROUNDED, border_style="info")
+                help_table.add_column("Command", style="bold")
+                help_table.add_column("Description")
+
+                help_table.add_row("exit", "Exit the CLI")
+                help_table.add_row("help", "Show this help message")
+                help_table.add_row("clear", "Clear the screen")
+                help_table.add_row("env", "Show current environment")
+
+                console.print(help_table)
                 continue
             elif user_input.lower() == "env":
-                print("\nCurrent environment:")
-                print(f"  API URL: {api_url}")
-                print(f"  Model: {model}")
-                print(f"  Agent Name: {agent_name}")
+                env_table = Table(title="Environment", box=box.ROUNDED, border_style="info")
+                env_table.add_column("Setting", style="bold")
+                env_table.add_column("Value")
+
+                env_table.add_row("API URL", f"[info]{api_url}[/info]")
+                env_table.add_row("Model", f"[highlight]{model}[/highlight]")
+                env_table.add_row("Agent Name", f"[agent]{agent_name}[/agent]")
+
+                console.print(env_table)
                 continue
             elif user_input.lower() == "clear":
-                os.system("cls" if os.name == "nt" else "clear")
+                console.clear()
+                # Re-display the banner and info
+                console.print(Panel(banner, border_style="agent"))
+                console.print(table)
+                console.print("\n[system]Type 'exit' to quit. Type 'help' for available commands.[/system]\n")
                 continue
-            # Removed calc command
             elif not user_input.strip():
                 continue
 
-            print("Thinking...")
+            # Show user message
+            console.print(f"\n[user]{user_input}[/user]")
+
+            # Show thinking message with spinner
+            with console.status("[info]Thinking...[/info]", spinner="dots"):
+                # The actual processing happens here
 
             # Call the API
             response = call_api(
@@ -380,39 +448,36 @@ def run_cli():
             cleaned_text = cleaned_text.strip()
 
             # Format the response
-            print("\n" + "=" * 40)
-            print("📝 Response:")
-            print("-" * 80)
-
-            # No additional processing - just use the AI's response as is
-
-            # Preserve the structure of the response
-            # Split by double newlines to get paragraphs
-            paragraphs = cleaned_text.split("\n\n")
-            for paragraph in paragraphs:
-                # Split by single newlines to get lines within paragraphs
-                lines = paragraph.split("\n")
-                for line in lines:
-                    print(line.strip())
-                # Add a blank line between paragraphs
-                if len(paragraphs) > 1:
-                    print()
-
-            print("-" * 80)
+            # Try to parse as markdown for better formatting
+            try:
+                md = Markdown(cleaned_text)
+                console.print(Panel(md, title="[agent]Response[/agent]", border_style="agent", expand=False))
+            except Exception:
+                # If markdown parsing fails, fall back to simple panel
+                console.print(Panel(cleaned_text, title="[agent]Response[/agent]", border_style="agent", expand=False))
 
             # Print usage information if available
             if "usage" in response:
                 usage = response["usage"]
-                print(f"\nTokens used: {usage.get('total_tokens', 'N/A')} "
-                      f"(Prompt: {usage.get('prompt_tokens', 'N/A')}, "
-                      f"Completion: {usage.get('completion_tokens', 'N/A')})")
+                usage_table = Table(box=box.SIMPLE, show_header=False, title="Usage", title_style="metadata")
+                usage_table.add_column("Metric", style="metadata")
+                usage_table.add_column("Value", style="metadata")
+
+                usage_table.add_row(
+                    "Tokens",
+                    f"Total: {usage.get('total_tokens', 'N/A')} | "
+                    f"Prompt: {usage.get('prompt_tokens', 'N/A')} | "
+                    f"Completion: {usage.get('completion_tokens', 'N/A')}"
+                )
+
+                console.print(usage_table)
 
         except KeyboardInterrupt:
-            print("\nExiting...")
+            console.print("\n[system]Exiting...[/system]")
             break
         except Exception as e:
             logger.error(f"Error: {e}")
-            print(f"Error: {e}")
+            console.print(f"\n[error]Error: {e}[/error]")
 
     return 0
 
