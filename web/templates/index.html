@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ agent_name }} - Chat Interface</title>
+    <title>Sujin - Multi-Agent Chat Interface</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Add Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -14,46 +14,109 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <div class="agent-info">
-                <h1>{{ agent_name }}</h1>
-                <div id="status-indicator" class="status-indicator offline">
-                    <span id="status-text">Offline</span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button id="clear-chat" title="Clear chat history">
-                    <i class="fas fa-trash"></i>
+    <div class="app-container">
+        <!-- Sidebar for agent management -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Agents</h2>
+                <button id="new-agent-button" class="action-button" title="Create new agent">
+                    <i class="fas fa-plus"></i>
                 </button>
             </div>
-        </div>
-        
-        <div id="chat-messages" class="chat-messages">
-            <div class="message system">
-                <div class="message-content">
-                    <p>Welcome to {{ agent_name }}! How can I help you today?</p>
+
+            <div id="agent-list" class="agent-list">
+                <!-- Agents will be loaded here -->
+                <div class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading agents...
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div id="service-status" class="service-status">
+                    <i class="fas fa-circle-notch fa-spin"></i> Connecting...
                 </div>
             </div>
         </div>
-        
-        <div class="chat-input-container">
-            <textarea id="user-input" placeholder="Type your message here..." rows="1"></textarea>
-            <button id="send-button" title="Send message">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-        
-        <div class="chat-footer">
-            <div id="token-usage" class="token-usage">
-                <span>Tokens: 0</span>
+
+        <!-- Main chat area -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="agent-info">
+                    <h1 id="current-agent-name">Sujin</h1>
+                    <div id="agent-model" class="agent-model">Loading...</div>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-chat" title="Clear chat history">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-            <div class="powered-by">
-                Powered by Sujin Agent Framework
+
+            <div id="chat-messages" class="chat-messages">
+                <div class="message system">
+                    <div class="message-content">
+                        <p>Welcome to Sujin Multi-Agent Chat! Select an agent from the sidebar or create a new one to get started.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <textarea id="user-input" placeholder="Type your message here..." rows="1" disabled></textarea>
+                <button id="send-button" title="Send message" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <div class="chat-footer">
+                <div id="token-usage" class="token-usage">
+                    <span>Tokens: 0</span>
+                </div>
+                <div class="powered-by">
+                    Powered by Sujin Agent Framework
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Agent creation modal -->
+    <div id="agent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Agent</h2>
+                <button id="close-modal" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="agent-form">
+                    <div class="form-group">
+                        <label for="agent-name">Agent Name</label>
+                        <input type="text" id="agent-name" name="name" required placeholder="e.g., Math Tutor">
+                    </div>
+                    <div class="form-group">
+                        <label for="agent-description">Description</label>
+                        <textarea id="agent-description" name="description" placeholder="e.g., A helpful math tutor that can solve problems step-by-step"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="api-url">API URL</label>
+                        <input type="url" id="api-url" name="api_url" required placeholder="e.g., https://llm.chutes.ai/v1/chat/completions">
+                    </div>
+                    <div class="form-group">
+                        <label for="api-key">API Key</label>
+                        <input type="password" id="api-key" name="api_key" required placeholder="Your API key">
+                    </div>
+                    <div class="form-group">
+                        <label for="model">Model</label>
+                        <input type="text" id="model" name="model" required placeholder="e.g., RekaAI/reka-flash-3">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">Create Agent</button>
+                        <button type="button" id="cancel-agent" class="secondary-button">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/agents.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
 </html>
