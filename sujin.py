@@ -418,8 +418,16 @@ def run_cli():
             # Clean up the response text
             import re
 
-            # Simply remove any <reasoning> tags and their content
-            cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
+            # Keep the reasoning but mark it clearly
+            reasoning_match = re.search(r'<reasoning>(.*?)</reasoning>', response_text, flags=re.DOTALL)
+            reasoning_content = ""
+            if reasoning_match:
+                reasoning_content = reasoning_match.group(1).strip()
+                # Replace the tags with clear markers but keep the content
+                cleaned_text = re.sub(r'<reasoning>(.*?)</reasoning>', r'\n\n--- REASONING ---\n\1\n--- END REASONING ---', response_text, flags=re.DOTALL)
+            else:
+                # If no reasoning tags, just use the response as is
+                cleaned_text = response_text
 
             # Remove any <sep> tags and everything after them
             cleaned_text = re.sub(r'<sep>.*$', '', cleaned_text, flags=re.DOTALL)
@@ -446,13 +454,11 @@ def run_cli():
             cleaned_text = cleaned_text.strip()
 
             # Format the response
-            # Try to parse as markdown for better formatting
-            try:
-                md = Markdown(cleaned_text)
-                console.print(Panel(md, title="[agent]Response[/agent]", border_style="agent", expand=False))
-            except Exception:
-                # If markdown parsing fails, fall back to simple panel
-                console.print(Panel(cleaned_text, title="[agent]Response[/agent]", border_style="agent", expand=False))
+            # Simple text output without fancy formatting
+            console.print("\n[agent]Response:[/agent]")
+            console.print("-" * 80)
+            console.print(cleaned_text)
+            console.print("-" * 80)
 
             # Print usage information if available
             if "usage" in response:
