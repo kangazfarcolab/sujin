@@ -183,7 +183,7 @@ class CliAgent(Agent):
                     )
                 )
 
-        # If we don't have an API client or the API call failed, use a simple response
+        # If we don't have an API client or the API call failed, use a built-in response system
         if content.startswith("echo "):
             message = content[5:]
             return AgentOutput(
@@ -199,11 +199,70 @@ class CliAgent(Agent):
                 ]
             )
         else:
+            # Simple built-in responses for common questions
+            response = self.get_built_in_response(content)
             return AgentOutput(
                 message=Message(
                     role="assistant",
-                    content=f"You said: {content}\nI'm a simple CLI agent. Try 'echo [message]' to use my echo tool."
+                    content=response
                 )
+            )
+
+    def get_built_in_response(self, query: str) -> str:
+        """Get a built-in response for common questions.
+
+        Args:
+            query: The user's query
+
+        Returns:
+            A response to the query
+        """
+        # Convert to lowercase for easier matching
+        query_lower = query.lower()
+
+        # Greetings
+        if any(greeting in query_lower for greeting in ["hello", "hi", "hey", "greetings"]):
+            return f"Hello! I'm {self.name}, a simple CLI agent. How can I help you today?"
+
+        # Questions about capabilities
+        elif any(word in query_lower for word in ["what can you do", "help me", "capabilities", "functions"]):
+            return (
+                f"I'm {self.name}, a simple CLI agent. Without an API connection, my capabilities are limited, but I can:\n\n"
+                "1. Respond to basic questions\n"
+                "2. Echo messages back to you (try 'echo [message]')\n"
+                "3. Provide information about the Sujin framework\n\n"
+                "For more advanced capabilities, please connect me to an API using the --api-url and --api-key parameters."
+            )
+
+        # Questions about the agent
+        elif any(word in query_lower for word in ["who are you", "what are you", "your name"]):
+            return f"I'm {self.name}, an AI assistant powered by the Sujin Agent Framework. I'm currently running in CLI mode."
+
+        # Questions about Sujin
+        elif "sujin" in query_lower:
+            return (
+                "Sujin (수진) is a comprehensive framework designed to simplify the development, deployment, "
+                "and management of AI agents. It provides a structured approach to building agents that can "
+                "perform a wide range of tasks, from simple automation to complex reasoning.\n\n"
+                "The framework includes:\n"
+                "- Modular Architecture: Easily extend and customize agent capabilities\n"
+                "- Pydantic Integration: Strong typing and validation with Pydantic models\n"
+                "- MCP Architecture: Model-Controller-Plugin pattern for flexible, extensible agents\n"
+                "- Plugin System: Dynamically discover and load plugins\n"
+                "- Tool Integration: Seamlessly connect with external tools and APIs"
+            )
+
+        # Math questions
+        elif any(op in query_lower for op in ["+", "plus", "add", "-", "minus", "subtract", "*", "multiply", "/", "divide"]):
+            return "I can perform basic math operations when connected to an API. Please connect me to an API for this functionality."
+
+        # Default response
+        else:
+            return (
+                f"I'm a simple CLI agent without an API connection, so my responses are limited. "
+                f"Try 'echo [message]' to use my echo tool, or ask me about my capabilities or about the Sujin framework.\n\n"
+                f"For more advanced functionality, please run me with an API connection using:\n"
+                f"python sujin_cli.py --api-url \"https://your-api-url\" --api-key \"your-api-key\" --model \"your-model\""
             )
 
 
