@@ -10,10 +10,13 @@ from .api import call_api, extract_response
 
 logger = logging.getLogger(__name__)
 
-def handle_exit() -> bool:
+def handle_exit(config: Dict[str, Any]) -> bool:
     """
     Handle the exit command.
-    
+
+    Args:
+        config: Configuration dictionary
+
     Returns:
         True to exit, False to continue
     """
@@ -23,10 +26,10 @@ def handle_exit() -> bool:
 def handle_help(config: Dict[str, Any]) -> bool:
     """
     Handle the help command.
-    
+
     Args:
         config: Configuration dictionary
-        
+
     Returns:
         True to exit, False to continue
     """
@@ -36,10 +39,10 @@ def handle_help(config: Dict[str, Any]) -> bool:
 def handle_env(config: Dict[str, Any]) -> bool:
     """
     Handle the env command.
-    
+
     Args:
         config: Configuration dictionary
-        
+
     Returns:
         True to exit, False to continue
     """
@@ -49,10 +52,10 @@ def handle_env(config: Dict[str, Any]) -> bool:
 def handle_clear(config: Dict[str, Any]) -> bool:
     """
     Handle the clear command.
-    
+
     Args:
         config: Configuration dictionary
-        
+
     Returns:
         True to exit, False to continue
     """
@@ -63,17 +66,17 @@ def handle_clear(config: Dict[str, Any]) -> bool:
 def handle_query(user_input: str, config: Dict[str, Any]) -> bool:
     """
     Handle a user query.
-    
+
     Args:
         user_input: The user's input
         config: Configuration dictionary
-        
+
     Returns:
         True to exit, False to continue
     """
     # Show user message
     console.print(f"\n[user]{user_input}[/user]")
-    
+
     # Show thinking message with spinner
     with console.status("[info]Thinking...[/info]", spinner="dots"):
         # Call the API
@@ -84,14 +87,14 @@ def handle_query(user_input: str, config: Dict[str, Any]) -> bool:
             model=config["model"],
             max_tokens=1500  # Increased token limit for more complete responses
         )
-    
+
     # Extract and process the response
     response_text = extract_response(response)
     processed_text = process_response(response_text)
-    
+
     # Display the response
     display_response(processed_text, response)
-    
+
     return False
 
 # Command handlers dictionary
@@ -105,16 +108,16 @@ COMMANDS = {
 def process_command(user_input: str, config: Dict[str, Any]) -> bool:
     """
     Process a command.
-    
+
     Args:
         user_input: The user's input
         config: Configuration dictionary
-        
+
     Returns:
         True to exit, False to continue
     """
     command = user_input.lower()
-    
+
     if command in COMMANDS:
         return COMMANDS[command](config)
     elif not command.strip():
