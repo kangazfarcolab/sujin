@@ -108,6 +108,23 @@ python sujin.py
 > exit
 ```
 
+### Using the Web UI
+
+Sujin also provides a web-based chat interface:
+
+```bash
+# Start the web UI
+python sujin_web.py
+
+# Specify a different port
+python sujin_web.py --port 8080
+
+# Run in debug mode
+python sujin_web.py --debug
+```
+
+Once started, you can access the web UI at http://localhost:5000 (or the port you specified).
+
 ### Using the API Client
 
 You can use the custom API client to connect to OpenAI-compatible APIs:
