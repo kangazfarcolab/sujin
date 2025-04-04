@@ -24,7 +24,7 @@ def call_api(
     api_url: str,
     api_key: str,
     model: str,
-    system_message: str = "You are a helpful assistant. For mathematical expressions, provide a clear step-by-step solution and a final answer.",
+    system_message: str = "You are a helpful assistant.",
     max_tokens: int = 1000
 ) -> Dict[str, Any]:
     """
@@ -331,50 +331,7 @@ def run_cli():
             elif user_input.lower() == "clear":
                 os.system("cls" if os.name == "nt" else "clear")
                 continue
-            elif user_input.lower().startswith("calc "):
-                # Handle mathematical expressions directly
-                try:
-                    expression = user_input[5:].strip()
-                    # Replace ^ with ** for exponentiation
-                    expression = expression.replace("^", "**")
-                    # Safely evaluate the expression
-                    import math
-                    # Define a safe namespace for evaluation
-                    safe_dict = {
-                        'abs': abs, 'round': round,
-                        'min': min, 'max': max,
-                        'sum': sum, 'len': len,
-                        'pow': pow, 'round': round,
-                        'int': int, 'float': float,
-                        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
-                        'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
-                        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
-                        'pi': math.pi, 'e': math.e
-                    }
-                    result = eval(expression, {"__builtins__": {}}, safe_dict)
-
-                    # Format the result
-                    print("\nCalculation:")
-                    print("-" * 80)
-                    print(f"Expression: {expression}")
-                    print(f"Result: {result}")
-
-                    # For complex expressions, show the steps
-                    if any(op in expression for op in ["+", "-", "*", "/", "**", "(", ")"]):
-                        print("\nOrder of operations:")
-                        # This is a simplified explanation - for complex expressions,
-                        # we'd need a proper parser to show the exact steps
-                        print("1. Evaluate expressions inside parentheses")
-                        print("2. Evaluate exponents (^)")
-                        print("3. Perform multiplication and division from left to right")
-                        print("4. Perform addition and subtraction from left to right")
-
-                    print("-" * 80)
-                except Exception as e:
-                    print(f"\nError calculating expression: {e}")
-                    print("Try using the 'calc' command with a valid mathematical expression.")
-                    print("Example: calc 2 + 2 * 3")
-                continue
+            # Removed calc command
             elif not user_input.strip():
                 continue
 
