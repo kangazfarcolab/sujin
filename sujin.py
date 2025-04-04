@@ -403,16 +403,14 @@ def run_cli():
 
             # Show thinking message with spinner
             with console.status("[info]Thinking...[/info]", spinner="dots"):
-                # The actual processing happens here
-
-            # Call the API
-            response = call_api(
-                prompt=user_input,
-                api_url=api_url,
-                api_key=api_key,
-                model=model,
-                max_tokens=1500  # Increased token limit for more complete responses
-            )
+                # Call the API
+                response = call_api(
+                    prompt=user_input,
+                    api_url=api_url,
+                    api_key=api_key,
+                    model=model,
+                    max_tokens=1500  # Increased token limit for more complete responses
+                )
 
             # Extract and print the response
             response_text = extract_response(response)
