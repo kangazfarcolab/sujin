@@ -44,75 +44,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     serviceConnected = true;
                     loadAgents();
                 } else {
-                    updateServiceStatus('offline', data.message || 'Agent service offline', data.can_start);
+                    updateServiceStatus('offline', data.message || 'Agent service offline');
                     serviceConnected = false;
                 }
             })
             .catch(error => {
                 console.error('Error checking service status:', error);
-                updateServiceStatus('offline', 'Cannot connect to agent service', true);
+                updateServiceStatus('offline', 'Cannot connect to agent service');
                 serviceConnected = false;
             });
     }
 
-    function startAgentService() {
-        // Update status to show we're starting
-        updateServiceStatus('connecting', 'Starting agent service...');
+    // Agent service is always started automatically by the web UI
 
-        // Disable the button to prevent multiple clicks
-        const startButton = document.getElementById('start-service-button');
-        if (startButton) {
-            startButton.disabled = true;
-            startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
-        }
-
-        // Call the API to start the service
-        fetch('/api/service/start', {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Service started successfully
-                updateServiceStatus('online', 'Agent service started');
-                serviceConnected = true;
-
-                // Load agents after a short delay to give the service time to initialize
-                setTimeout(() => {
-                    loadAgents();
-                }, 1000);
-            } else {
-                // Failed to start service
-                updateServiceStatus('error', `Failed to start agent service: ${data.message}`, true);
-                serviceConnected = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error starting agent service:', error);
-            updateServiceStatus('error', `Error starting agent service: ${error.message}`, true);
-            serviceConnected = false;
-        });
-    }
-
-    function updateServiceStatus(status, message, canStart = false) {
+    function updateServiceStatus(status, message) {
         serviceStatus.className = `service-status ${status}`;
-
-        let html = `<i class="fas fa-${getStatusIcon(status)}"></i> ${message}`;
-
-        // Add start button if the service can be started
-        if (canStart && (status === 'offline' || status === 'error')) {
-            html += ` <button id="start-service-button" class="action-button small">Start Service</button>`;
-
-            // Add the event listener after a short delay to ensure the element exists
-            setTimeout(() => {
-                const startButton = document.getElementById('start-service-button');
-                if (startButton) {
-                    startButton.addEventListener('click', startAgentService);
-                }
-            }, 100);
-        }
-
-        serviceStatus.innerHTML = html;
+        serviceStatus.innerHTML = `<i class="fas fa-${getStatusIcon(status)}"></i> ${message}`;
     }
 
     function getStatusIcon(status) {
