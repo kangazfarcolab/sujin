@@ -334,11 +334,45 @@ def run_cli():
                 # Handle mathematical expressions directly
                 try:
                     expression = user_input[5:].strip()
-                    result = eval(expression)
-                    print(f"\nCalculation: {expression}")
+                    # Replace ^ with ** for exponentiation
+                    expression = expression.replace("^", "**")
+                    # Safely evaluate the expression
+                    import math
+                    # Define a safe namespace for evaluation
+                    safe_dict = {
+                        'abs': abs, 'round': round,
+                        'min': min, 'max': max,
+                        'sum': sum, 'len': len,
+                        'pow': pow, 'round': round,
+                        'int': int, 'float': float,
+                        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+                        'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
+                        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
+                        'pi': math.pi, 'e': math.e
+                    }
+                    result = eval(expression, {"__builtins__": {}}, safe_dict)
+
+                    # Format the result
+                    print("\nCalculation:")
+                    print("-" * 80)
+                    print(f"Expression: {expression}")
                     print(f"Result: {result}")
+
+                    # For complex expressions, show the steps
+                    if any(op in expression for op in ["+", "-", "*", "/", "**", "(", ")"]):
+                        print("\nOrder of operations:")
+                        # This is a simplified explanation - for complex expressions,
+                        # we'd need a proper parser to show the exact steps
+                        print("1. Evaluate expressions inside parentheses")
+                        print("2. Evaluate exponents (^)")
+                        print("3. Perform multiplication and division from left to right")
+                        print("4. Perform addition and subtraction from left to right")
+
+                    print("-" * 80)
                 except Exception as e:
                     print(f"\nError calculating expression: {e}")
+                    print("Try using the 'calc' command with a valid mathematical expression.")
+                    print("Example: calc 2 + 2 * 3")
                 continue
             elif not user_input.strip():
                 continue
@@ -357,14 +391,43 @@ def run_cli():
             response_text = extract_response(response)
 
             # Clean up the response text
-            # Remove any <reasoning> tags and their content
             import re
+            # Remove any <reasoning> tags and their content
             cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
+            # Remove any <sep> tags and everything after them
+            cleaned_text = re.sub(r'<sep>.*$', '', cleaned_text, flags=re.DOTALL)
+            # Remove LaTeX formatting (backslashes and parentheses)
+            cleaned_text = re.sub(r'\\\(|\\\)', '', cleaned_text)
+            cleaned_text = re.sub(r'\\boxed\{([^}]*)\}', r'\1', cleaned_text)
+            cleaned_text = re.sub(r'\\([a-zA-Z]+)', r'\1', cleaned_text)
+            # Remove extra whitespace
+            cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+            cleaned_text = re.sub(r'\s+\.', '.', cleaned_text)
+            cleaned_text = re.sub(r'\s+\,', ',', cleaned_text)
 
             # Format the response
             print("\nResponse:")
             print("-" * 80)
-            print(cleaned_text.strip())
+
+            # Format mathematical expressions better
+            if any(op in user_input for op in ["+", "-", "*", "/", "^", "(", ")"]):
+                try:
+                    # Try to evaluate the expression directly
+                    result = eval(user_input.replace("^", "**"))
+                    print(f"Expression: {user_input}")
+                    print(f"Result: {result}")
+                except:
+                    # If direct evaluation fails, just print the cleaned response
+                    lines = cleaned_text.strip().split("\n")
+                    for line in lines:
+                        print(line.strip())
+            else:
+                # For non-mathematical responses, format with paragraphs
+                paragraphs = cleaned_text.strip().split("\n\n")
+                for paragraph in paragraphs:
+                    print(paragraph.strip())
+                    print()
+
             print("-" * 80)
 
             # Print usage information if available
