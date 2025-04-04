@@ -24,7 +24,8 @@ def call_api(
     api_url: str,
     api_key: str,
     model: str,
-    system_message: str = "You are a helpful assistant."
+    system_message: str = "You are a helpful assistant. For mathematical expressions, provide a clear step-by-step solution and a final answer.",
+    max_tokens: int = 1000
 ) -> Dict[str, Any]:
     """
     Call the API with the given prompt.
@@ -51,7 +52,7 @@ def call_api(
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.7,
-        "max_tokens": 500
+        "max_tokens": max_tokens
     }
 
     logger.debug(f"Calling API at {api_url}")
@@ -384,7 +385,8 @@ def run_cli():
                 prompt=user_input,
                 api_url=api_url,
                 api_key=api_key,
-                model=model
+                model=model,
+                max_tokens=1500  # Increased token limit for more complete responses
             )
 
             # Extract and print the response
@@ -392,68 +394,16 @@ def run_cli():
 
             # Clean up the response text
             import re
-            # Check if there's an unclosed <reasoning> tag
-            if '<reasoning>' in response_text and '</reasoning>' not in response_text:
-                # Add a closing tag at the end
-                response_text += '\n</reasoning>'
 
-            # Store the reasoning for debugging if needed
-            reasoning = ""
-            reasoning_match = re.search(r'<reasoning>(.*?)</reasoning>', response_text, re.DOTALL)
-            if reasoning_match:
-                reasoning = reasoning_match.group(1).strip()
-
-            # Instead of removing reasoning, let's use it to enhance the response
-            # First, extract the reasoning content
-            reasoning_content = ""
-            if reasoning:
-                # Extract key steps from the reasoning
-                calculation_steps = []
-                for line in reasoning.split("\n"):
-                    # Look for lines that contain calculations or key steps
-                    if any(op in line for op in ["+", "-", "*", "/", "="]) and not line.startswith("#"):
-                        calculation_steps.append(line.strip())
-
-                # If we found calculation steps, add them to the response
-                if calculation_steps:
-                    reasoning_content = "Calculation steps:\n" + "\n".join(calculation_steps)
-
-            # For mathematical expressions, if the cleaned text is too short, use the reasoning
-            is_math_expression = any(op in user_input for op in ["+", "-", "*", "/", "^", "(", ")"])
-
-            # Remove reasoning tags but keep the content if needed
-            if is_math_expression and reasoning:
-                # Replace the reasoning tags with empty strings but keep the content
-                cleaned_text = re.sub(r'<reasoning>|</reasoning>', '', response_text, flags=re.DOTALL)
-            else:
-                # For non-math expressions, remove reasoning completely
-                cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
+            # Simply remove any <reasoning> tags and their content
+            cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', response_text, flags=re.DOTALL)
 
             # Remove any <sep> tags and everything after them
             cleaned_text = re.sub(r'<sep>.*$', '', cleaned_text, flags=re.DOTALL)
 
-            # If the response is empty after cleaning, use the reasoning as a fallback
-            if cleaned_text.strip() == "" and reasoning != "":
-                # Extract the conclusion from the reasoning if possible
-                conclusion_indicators = ["so", "therefore", "thus", "hence", "in conclusion", "to summarize", "finally"]
-                conclusion = ""
-
-                # Look for sentences that might contain a conclusion
-                sentences = re.split(r'(?<=[.!?])\s+', reasoning)
-                for sentence in reversed(sentences):  # Start from the end
-                    if any(indicator in sentence.lower() for indicator in conclusion_indicators):
-                        conclusion = sentence
-                        break
-
-                # If no conclusion found, use the last sentence
-                if conclusion == "" and sentences:
-                    conclusion = sentences[-1]
-
-                # Use the conclusion or the whole reasoning if needed
-                if conclusion != "":
-                    cleaned_text = conclusion
-                else:
-                    cleaned_text = "Based on my calculations: " + reasoning
+            # If the response is empty after cleaning, provide a simple message
+            if cleaned_text.strip() == "":
+                cleaned_text = "I'm sorry, I couldn't generate a proper response."
 
             # Improve formatting for mathematical expressions
             # Replace LaTeX formatting with more readable symbols
@@ -473,91 +423,11 @@ def run_cli():
             cleaned_text = cleaned_text.strip()
 
             # Format the response
-            print("\nResponse:")
+            print("\n" + "=" * 40)
+            print("📝 Response:")
             print("-" * 80)
 
-            # Check if this is a mathematical expression
-            is_math_expression = any(op in user_input for op in ["+", "-", "*", "/", "^", "(", ")"])
-
-            # For mathematical expressions, ensure there's a clear answer
-            if is_math_expression and cleaned_text.strip() == "":
-                # If the response is empty after cleaning, provide a basic answer
-                try:
-                    # Safely evaluate the expression
-                    import math
-                    # Define a safe namespace for evaluation
-                    safe_dict = {
-                        'abs': abs, 'round': round,
-                        'min': min, 'max': max,
-                        'sum': sum, 'len': len,
-                        'pow': pow, 'round': round,
-                        'int': int, 'float': float,
-                        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
-                        'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
-                        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
-                        'pi': math.pi, 'e': math.e
-                    }
-                    # Replace ^ with ** for exponentiation
-                    expression = user_input.replace("^", "**")
-                    result = eval(expression, {"__builtins__": {}}, safe_dict)
-                    cleaned_text = f"The answer to {user_input} is {result}."
-                except:
-                    # If evaluation fails, just provide a generic message
-                    cleaned_text = "I couldn't extract a clear answer from the AI's response."
-
-            # Add a clear answer section for math expressions if not already present
-            if is_math_expression:
-                try:
-                    # Safely evaluate the expression
-                    import math
-                    # Define a safe namespace for evaluation
-                    safe_dict = {
-                        'abs': abs, 'round': round,
-                        'min': min, 'max': max,
-                        'sum': sum, 'len': len,
-                        'pow': pow, 'round': round,
-                        'int': int, 'float': float,
-                        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
-                        'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
-                        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
-                        'pi': math.pi, 'e': math.e
-                    }
-                    # Replace ^ with ** for exponentiation
-                    expression = user_input.replace("^", "**")
-                    result = eval(expression, {"__builtins__": {}}, safe_dict)
-
-                    # Check if the final answer is already in the text
-                    if not any(f"{result}" in line for line in cleaned_text.split("\n")):
-                        # Add the calculation steps if available
-                        if reasoning_content and reasoning_content not in cleaned_text:
-                            cleaned_text += f"\n\n{reasoning_content}"
-
-                        # Add a clear final answer
-                        cleaned_text += f"\n\nFinal Answer: {result}"
-                except:
-                    # If evaluation fails, don't add anything
-                    pass
-
-            # For non-mathematical expressions, ensure there's a clear conclusion
-            elif not is_math_expression and reasoning and not any(keyword in cleaned_text.lower() for keyword in ["conclusion", "summary", "answer", "result", "finally", "therefore", "thus", "hence"]):
-                # Try to extract a conclusion from the reasoning
-                conclusion_indicators = ["so", "therefore", "thus", "hence", "in conclusion", "to summarize", "finally"]
-                conclusion = ""
-
-                # Look for sentences that might contain a conclusion
-                sentences = re.split(r'(?<=[.!?])\s+', reasoning)
-                for sentence in reversed(sentences):  # Start from the end
-                    if any(indicator in sentence.lower() for indicator in conclusion_indicators):
-                        conclusion = sentence
-                        break
-
-                # If no conclusion found, use the last sentence
-                if conclusion == "" and sentences:
-                    conclusion = sentences[-1]
-
-                # Add the conclusion if found
-                if conclusion != "":
-                    cleaned_text += f"\n\nConclusion: {conclusion}"
+            # No additional processing - just use the AI's response as is
 
             # Preserve the structure of the response
             # Split by double newlines to get paragraphs
