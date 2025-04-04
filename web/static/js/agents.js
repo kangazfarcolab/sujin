@@ -13,25 +13,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const agentModel = document.getElementById('agent-model');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
-    
+
     // State
     let agents = [];
     let currentAgentId = null;
     let serviceConnected = false;
-    
+
     // Initialize
     checkServiceStatus();
-    
+
     // Event listeners
     newAgentButton.addEventListener('click', showAgentModal);
     closeModal.addEventListener('click', hideAgentModal);
     cancelAgent.addEventListener('click', hideAgentModal);
     agentForm.addEventListener('submit', createAgent);
-    
+
     // Functions
     function checkServiceStatus() {
         updateServiceStatus('connecting', 'Connecting to agent service...');
-        
+
         fetch('/api/status')
             .then(response => response.json())
             .then(data => {
@@ -44,22 +44,77 @@ document.addEventListener('DOMContentLoaded', function() {
                     serviceConnected = true;
                     loadAgents();
                 } else {
-                    updateServiceStatus('offline', data.message || 'Agent service offline');
+                    updateServiceStatus('offline', data.message || 'Agent service offline', data.can_start);
                     serviceConnected = false;
                 }
             })
             .catch(error => {
                 console.error('Error checking service status:', error);
-                updateServiceStatus('offline', 'Cannot connect to agent service');
+                updateServiceStatus('offline', 'Cannot connect to agent service', true);
                 serviceConnected = false;
             });
     }
-    
-    function updateServiceStatus(status, message) {
-        serviceStatus.className = `service-status ${status}`;
-        serviceStatus.innerHTML = `<i class="fas fa-${getStatusIcon(status)}"></i> ${message}`;
+
+    function startAgentService() {
+        // Update status to show we're starting
+        updateServiceStatus('connecting', 'Starting agent service...');
+
+        // Disable the button to prevent multiple clicks
+        const startButton = document.getElementById('start-service-button');
+        if (startButton) {
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+        }
+
+        // Call the API to start the service
+        fetch('/api/service/start', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Service started successfully
+                updateServiceStatus('online', 'Agent service started');
+                serviceConnected = true;
+
+                // Load agents after a short delay to give the service time to initialize
+                setTimeout(() => {
+                    loadAgents();
+                }, 1000);
+            } else {
+                // Failed to start service
+                updateServiceStatus('error', `Failed to start agent service: ${data.message}`, true);
+                serviceConnected = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error starting agent service:', error);
+            updateServiceStatus('error', `Error starting agent service: ${error.message}`, true);
+            serviceConnected = false;
+        });
     }
-    
+
+    function updateServiceStatus(status, message, canStart = false) {
+        serviceStatus.className = `service-status ${status}`;
+
+        let html = `<i class="fas fa-${getStatusIcon(status)}"></i> ${message}`;
+
+        // Add start button if the service can be started
+        if (canStart && (status === 'offline' || status === 'error')) {
+            html += ` <button id="start-service-button" class="action-button small">Start Service</button>`;
+
+            // Add the event listener after a short delay to ensure the element exists
+            setTimeout(() => {
+                const startButton = document.getElementById('start-service-button');
+                if (startButton) {
+                    startButton.addEventListener('click', startAgentService);
+                }
+            }, 100);
+        }
+
+        serviceStatus.innerHTML = html;
+    }
+
     function getStatusIcon(status) {
         switch (status) {
             case 'online': return 'check-circle';
@@ -69,13 +124,13 @@ document.addEventListener('DOMContentLoaded', function() {
             default: return 'question-circle';
         }
     }
-    
+
     function loadAgents() {
         fetch('/api/agents')
             .then(response => response.json())
             .then(data => {
                 agents = data.agents || [];
-                
+
                 if (agents.length === 0) {
                     agentList.innerHTML = `
                         <div class="empty-state">
@@ -86,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     disableChat();
                 } else {
                     renderAgentList(agents, data.default_agent_id);
-                    
+
                     // Set current agent to default if available
                     if (data.default_agent_id && !currentAgentId) {
                         selectAgent(data.default_agent_id);
@@ -103,28 +158,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             });
     }
-    
+
     function renderAgentList(agents, defaultAgentId) {
         agentList.innerHTML = '';
-        
+
         agents.forEach(agent => {
             const agentElement = document.createElement('div');
             agentElement.className = `agent-item ${agent.id === currentAgentId ? 'active' : ''}`;
             agentElement.dataset.agentId = agent.id;
-            
+
             agentElement.innerHTML = `
                 <div class="agent-item-info">
                     <div class="agent-item-name">${agent.name}</div>
                     <div class="agent-item-model">${agent.model}</div>
                 </div>
                 <div class="agent-item-actions">
-                    ${agent.id === defaultAgentId ? 
-                        '<span class="agent-default" title="Default agent"><i class="fas fa-star"></i></span>' : 
+                    ${agent.id === defaultAgentId ?
+                        '<span class="agent-default" title="Default agent"><i class="fas fa-star"></i></span>' :
                         '<button class="agent-action set-default" title="Set as default"><i class="far fa-star"></i></button>'}
                     <button class="agent-action delete" title="Delete agent"><i class="fas fa-trash"></i></button>
                 </div>
             `;
-            
+
             // Add click event to select agent
             agentElement.addEventListener('click', function(e) {
                 // Don't select if clicking on action buttons
@@ -132,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectAgent(agent.id);
                 }
             });
-            
+
             // Add click events for actions
             const setDefaultButton = agentElement.querySelector('.set-default');
             if (setDefaultButton) {
@@ -141,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setDefaultAgent(agent.id);
                 });
             }
-            
+
             const deleteButton = agentElement.querySelector('.delete');
             if (deleteButton) {
                 deleteButton.addEventListener('click', function(e) {
@@ -149,34 +204,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     deleteAgent(agent.id, agent.name);
                 });
             }
-            
+
             agentList.appendChild(agentElement);
         });
     }
-    
+
     function selectAgent(agentId) {
         // Update current agent
         currentAgentId = agentId;
-        
+
         // Update UI
         document.querySelectorAll('.agent-item').forEach(item => {
             item.classList.toggle('active', item.dataset.agentId === agentId);
         });
-        
+
         // Find the agent in the list
         const agent = agents.find(a => a.id === agentId);
         if (agent) {
             currentAgentName.textContent = agent.name;
             agentModel.textContent = agent.model;
             enableChat();
-            
+
             // Clear chat messages and add welcome message
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = '';
             addSystemMessage(`You are now chatting with ${agent.name}. How can I help you today?`);
         }
     }
-    
+
     function setDefaultAgent(agentId) {
         fetch('/api/agents/default', {
             method: 'PUT',
@@ -201,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error setting default agent. Please try again.');
         });
     }
-    
+
     function deleteAgent(agentId, agentName) {
         if (confirm(`Are you sure you want to delete the agent "${agentName}"?`)) {
             fetch(`/api/agents/${agentId}`, {
@@ -216,13 +271,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         currentAgentName.textContent = 'No Agent Selected';
                         agentModel.textContent = '';
                         disableChat();
-                        
+
                         // Clear chat messages and add message
                         const chatMessages = document.getElementById('chat-messages');
                         chatMessages.innerHTML = '';
                         addSystemMessage('Agent deleted. Please select another agent or create a new one.');
                     }
-                    
+
                     loadAgents(); // Refresh the agent list
                 } else {
                     console.error('Error deleting agent:', data.error);
@@ -235,11 +290,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-    
+
     function showAgentModal() {
         agentModal.classList.add('active');
         agentForm.reset();
-        
+
         // Pre-fill API URL if available from environment
         fetch('/api/config')
             .then(response => response.json())
@@ -253,14 +308,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading config:', error);
             });
     }
-    
+
     function hideAgentModal() {
         agentModal.classList.remove('active');
     }
-    
+
     function createAgent(e) {
         e.preventDefault();
-        
+
         // Get form data
         const formData = new FormData(agentForm);
         const agentData = {
@@ -270,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             api_key: formData.get('api_key'),
             model: formData.get('model')
         };
-        
+
         // Create agent
         fetch('/api/agents', {
             method: 'POST',
@@ -295,35 +350,35 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error creating agent. Please try again.');
         });
     }
-    
+
     function enableChat() {
         userInput.disabled = false;
         sendButton.disabled = false;
         userInput.placeholder = 'Type your message here...';
     }
-    
+
     function disableChat() {
         userInput.disabled = true;
         sendButton.disabled = true;
         userInput.placeholder = 'Select an agent to start chatting...';
     }
-    
+
     function addSystemMessage(message) {
         const chatMessages = document.getElementById('chat-messages');
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message system';
-        
+
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
         messageContent.innerHTML = `<p>${message}</p>`;
-        
+
         messageDiv.appendChild(messageContent);
         chatMessages.appendChild(messageDiv);
-        
+
         // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-    
+
     // Expose functions to window for use in chat.js
     window.agentManager = {
         getCurrentAgentId: function() {

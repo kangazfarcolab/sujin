@@ -117,6 +117,20 @@ body {
     background-color: #3a5a8c;
 }
 
+.action-button.small {
+    width: auto;
+    height: auto;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.action-button:disabled {
+    background-color: var(--secondary-color);
+    cursor: not-allowed;
+}
+
 .agent-list {
     flex: 1;
     overflow-y: auto;
