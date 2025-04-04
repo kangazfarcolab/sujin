@@ -126,8 +126,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadAgents() {
+        // Show loading state
+        agentList.innerHTML = `
+            <div class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Loading agents...
+            </div>
+        `;
+
         fetch('/api/agents')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 agents = data.agents || [];
 
@@ -152,10 +164,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading agents:', error);
                 agentList.innerHTML = `
                     <div class="error-state">
-                        <p>Error loading agents.</p>
-                        <p>Please try again later.</p>
+                        <p>Error loading agents: ${error.message}</p>
+                        <p>Make sure the agent service is running.</p>
+                        <button id="retry-load-agents" class="primary-button">Retry</button>
                     </div>
                 `;
+
+                // Add retry button event listener
+                setTimeout(() => {
+                    const retryButton = document.getElementById('retry-load-agents');
+                    if (retryButton) {
+                        retryButton.addEventListener('click', loadAgents);
+                    }
+                }, 100);
             });
     }
 

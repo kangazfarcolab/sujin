@@ -209,6 +209,8 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+    flex-wrap: wrap;
+    padding: 5px 0;
 }
 
 .service-status.online {
@@ -223,13 +225,32 @@ body {
     color: var(--warning-color);
 }
 
-.loading-indicator {
+.loading-indicator, .empty-state, .error-state {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    color: var(--secondary-color);
+    text-align: center;
     gap: 10px;
+}
+
+.loading-indicator {
+    color: var(--secondary-color);
+}
+
+.empty-state {
+    color: var(--secondary-color);
+}
+
+.error-state {
+    color: var(--error-color);
+}
+
+.error-state .primary-button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    font-size: 0.9rem;
 }
 
 /* Chat container */
