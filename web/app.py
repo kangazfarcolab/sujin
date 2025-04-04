@@ -30,6 +30,10 @@ app = Flask(__name__,
             template_folder='templates')
 CORS(app)
 
+# Import and register workflow API blueprint
+from web.workflow_api import workflow_api
+app.register_blueprint(workflow_api)
+
 # Get environment variables
 AGENT_SERVICE_URL = os.environ.get("AGENT_SERVICE_URL", "http://localhost:5000")
 AGENT_NAME = os.environ.get("AGENT_NAME", "Sujin")
@@ -135,6 +139,11 @@ logger.info(f"Web UI configured to connect to agent service at {AGENT_SERVICE_UR
 def index():
     """Render the main page."""
     return render_template('index.html', agent_name=AGENT_NAME)
+
+@app.route('/workflows')
+def workflows():
+    """Render the workflows page."""
+    return render_template('workflows.html')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
