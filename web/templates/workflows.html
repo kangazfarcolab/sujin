@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sujin - Workflow Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/workflow.css') }}">
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Add highlight.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- Add marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar for workflow management -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Workflows</h2>
+                <button id="new-workflow-button" class="action-button" title="Create new workflow">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div id="workflow-list" class="workflow-list">
+                <!-- Workflows will be loaded here -->
+                <div class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading workflows...
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('index') }}" class="nav-link">
+                    <i class="fas fa-comment"></i> Chat
+                </a>
+                <a href="{{ url_for('workflows') }}" class="nav-link active">
+                    <i class="fas fa-project-diagram"></i> Workflows
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main workflow area -->
+        <div class="workflow-container">
+            <div class="workflow-header">
+                <div class="workflow-info">
+                    <h1 id="current-workflow-name">Workflow Manager</h1>
+                    <div id="workflow-description" class="workflow-description">Select or create a workflow to get started</div>
+                </div>
+                <div class="header-actions">
+                    <button id="run-workflow" title="Run workflow" disabled>
+                        <i class="fas fa-play"></i> Run
+                    </button>
+                    <button id="save-workflow" title="Save workflow" disabled>
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+            
+            <div class="workflow-content">
+                <div id="workflow-canvas" class="workflow-canvas">
+                    <div class="empty-state">
+                        <i class="fas fa-project-diagram fa-3x"></i>
+                        <h2>No Workflow Selected</h2>
+                        <p>Select a workflow from the sidebar or create a new one to get started.</p>
+                    </div>
+                </div>
+                
+                <div id="component-panel" class="component-panel">
+                    <div class="panel-header">
+                        <h3>Components</h3>
+                    </div>
+                    <div class="component-categories">
+                        <div class="component-category">
+                            <h4>Agents</h4>
+                            <div class="component-list">
+                                <div class="component-item" draggable="true" data-type="agent">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Agent</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-category">
+                            <h4>Plugins</h4>
+                            <div class="component-list">
+                                <div class="component-item" draggable="true" data-type="plugin" data-plugin-type="web_search">
+                                    <i class="fas fa-search"></i>
+                                    <span>Web Search</span>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="plugin" data-plugin-type="database">
+                                    <i class="fas fa-database"></i>
+                                    <span>Database</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-category">
+                            <h4>Data Sources</h4>
+                            <div class="component-list">
+                                <div class="component-item" draggable="true" data-type="data_source" data-source-type="document">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span>Document</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-category">
+                            <h4>I/O</h4>
+                            <div class="component-list">
+                                <div class="component-item" draggable="true" data-type="input">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    <span>Input</span>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="output">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Output</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Workflow creation modal -->
+    <div id="workflow-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Workflow</h2>
+                <button id="close-modal" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="workflow-form">
+                    <div class="form-group">
+                        <label for="workflow-name">Workflow Name</label>
+                        <input type="text" id="workflow-name" name="name" required placeholder="e.g., Document Processing">
+                    </div>
+                    <div class="form-group">
+                        <label for="workflow-description">Description</label>
+                        <textarea id="workflow-description-input" name="description" placeholder="e.g., Process documents and extract information"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">Create Workflow</button>
+                        <button type="button" id="cancel-workflow" class="secondary-button">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Component configuration modal -->
+    <div id="component-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configure Component</h2>
+                <button id="close-component-modal" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="component-form">
+                    <input type="hidden" id="component-id" name="id">
+                    <input type="hidden" id="component-type" name="type">
+                    
+                    <div class="form-group">
+                        <label for="component-name">Component Name</label>
+                        <input type="text" id="component-name" name="name" required placeholder="e.g., Web Search">
+                    </div>
+                    
+                    <!-- Agent-specific fields -->
+                    <div id="agent-fields" class="component-type-fields">
+                        <div class="form-group">
+                            <label for="agent-id">Agent ID</label>
+                            <select id="agent-id" name="agent_id">
+                                <option value="">Select an agent</option>
+                                <!-- Agents will be loaded here -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-url">API URL</label>
+                            <input type="url" id="api-url" name="api_url" placeholder="e.g., https://llm.chutes.ai/v1/chat/completions">
+                        </div>
+                        <div class="form-group">
+                            <label for="api-key">API Key</label>
+                            <input type="password" id="api-key" name="api_key" placeholder="Your API key">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Model</label>
+                            <input type="text" id="model" name="model" placeholder="e.g., RekaAI/reka-flash-3">
+                        </div>
+                        <div class="form-group">
+                            <label for="system-prompt">System Prompt</label>
+                            <textarea id="system-prompt" name="system_prompt" placeholder="e.g., You are a helpful assistant."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Plugin-specific fields -->
+                    <div id="plugin-fields" class="component-type-fields">
+                        <div class="form-group">
+                            <label for="plugin-type">Plugin Type</label>
+                            <select id="plugin-type" name="plugin_type" required>
+                                <option value="web_search">Web Search</option>
+                                <option value="database">Database</option>
+                                <option value="file_system">File System</option>
+                            </select>
+                        </div>
+                        <!-- Plugin-specific configuration will be added dynamically -->
+                    </div>
+                    
+                    <!-- Data source-specific fields -->
+                    <div id="data-source-fields" class="component-type-fields">
+                        <div class="form-group">
+                            <label for="source-type">Source Type</label>
+                            <select id="source-type" name="source_type" required>
+                                <option value="document">Document</option>
+                                <option value="database">Database</option>
+                                <option value="api">API</option>
+                            </select>
+                        </div>
+                        <!-- Data source-specific configuration will be added dynamically -->
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">Save Component</button>
+                        <button type="button" id="cancel-component" class="secondary-button">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/workflow.js') }}"></script>
+</body>
+</html>

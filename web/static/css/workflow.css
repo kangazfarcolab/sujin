@@ -1,0 +1,355 @@
+/* Workflow UI styles */
+
+/* Workflow container */
+.workflow-container {
+    flex: 1;
+    background-color: var(--chat-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Workflow header */
+.workflow-header {
+    padding: 15px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.workflow-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.workflow-info h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.workflow-description {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.header-actions button {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    padding: 5px 10px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: var(--transition);
+}
+
+.header-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.header-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Workflow content */
+.workflow-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Workflow canvas */
+.workflow-canvas {
+    flex: 1;
+    background-color: var(--background-color);
+    position: relative;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.workflow-canvas .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary-color);
+    text-align: center;
+    padding: 20px;
+}
+
+.workflow-canvas .empty-state i {
+    margin-bottom: 20px;
+}
+
+/* Component panel */
+.component-panel {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.component-categories {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.component-category {
+    margin-bottom: 15px;
+}
+
+.component-category h4 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--secondary-color);
+}
+
+.component-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.component-item {
+    padding: 10px;
+    background-color: var(--chat-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: var(--transition);
+}
+
+.component-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.component-item i {
+    color: var(--primary-color);
+}
+
+/* Workflow list */
+.workflow-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.workflow-item {
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.workflow-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.workflow-item.active {
+    background-color: var(--sidebar-active);
+    font-weight: bold;
+}
+
+.workflow-item-info {
+    flex: 1;
+}
+
+.workflow-item-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.workflow-item-description {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+}
+
+.workflow-item-actions {
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.workflow-item:hover .workflow-item-actions {
+    opacity: 1;
+}
+
+/* Navigation links */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 10px;
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.nav-link.active {
+    background-color: var(--sidebar-active);
+    font-weight: bold;
+}
+
+/* Component on canvas */
+.canvas-component {
+    position: absolute;
+    width: 200px;
+    background-color: var(--chat-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    cursor: move;
+    user-select: none;
+    z-index: 1;
+}
+
+.canvas-component.selected {
+    border: 2px solid var(--primary-color);
+    z-index: 2;
+}
+
+.canvas-component-header {
+    padding: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.canvas-component-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-component-body {
+    padding: 10px;
+}
+
+.canvas-component-type {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    margin-bottom: 5px;
+}
+
+.canvas-component-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.canvas-component-action {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 0.9rem;
+}
+
+.canvas-component-action:hover {
+    color: var(--error-color);
+}
+
+.canvas-component-ports {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+}
+
+.port {
+    width: 12px;
+    height: 12px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.port:hover {
+    transform: scale(1.2);
+}
+
+.port.input {
+    margin-right: auto;
+}
+
+.port.output {
+    margin-left: auto;
+}
+
+/* Connection line */
+.connection {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.connection path {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+    animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -10;
+    }
+}
+
+/* Component type fields */
+.component-type-fields {
+    display: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .component-panel {
+        width: 200px;
+    }
+}
