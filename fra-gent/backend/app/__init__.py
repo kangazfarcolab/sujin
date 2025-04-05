@@ -1,3 +1,0 @@
-"""
-Fra-Gent API application.
-"""
